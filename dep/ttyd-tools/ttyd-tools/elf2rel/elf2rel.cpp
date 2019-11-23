@@ -1,14 +1,22 @@
 #include "elf2rel.h"
 
 #include <elfio/elfio.hpp>
-
-#include <boost/program_options.hpp>
-#include <boost/algorithm/string.hpp>
+#include <clipp/clipp.h>
 
 #include <iostream>
 #include <fstream>
 #include <tuple>
 #include <deque>
+#include <algorithm>
+#include <cctype>
+#include <locale>
+
+// trim from start (in place)
+static inline void trim_left(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+        return !std::isspace(ch);
+    }));
+}
 
 std::map<std::string, uint32_t> loadSymbolMap(const std::string &filename)
 {
@@ -17,7 +25,7 @@ std::map<std::string, uint32_t> loadSymbolMap(const std::string &filename)
 	std::ifstream inputStream(filename);
 	for (std::string line; std::getline(inputStream, line); )
 	{
-		boost::trim_left(line);
+		trim_left(line);
 
 		// Ignore comments
 		if (line.size() == 0 || line.find_first_of("//") == 0)
@@ -28,7 +36,7 @@ std::map<std::string, uint32_t> loadSymbolMap(const std::string &filename)
 		size_t index = line.find_first_of(':');
 
 		std::string name = line.substr(index + 1);
-		boost::trim_left(name);
+		trim_left(name);
 
 		uint32_t addr = strtoul(line.substr(0, index).c_str(), nullptr, 16);
 
@@ -115,46 +123,55 @@ int main(int argc, char **argv)
 {
 	std::string elfFilename;
 	std::string lstFilename;
-	std::string relFilename = "";
+	std::string relFilename;
 	int moduleID = 33;
 
 	{
-		namespace po = boost::program_options;
+		using namespace clipp;
 
-		po::options_description description("Options");
-		description.add_options()
-			("help", "Print help message")
-			("input-file,i", po::value(&elfFilename), "Input ELF filename (required)")
-			("symbol-file,s", po::value(&lstFilename), "Input symbol file name (required)")
-			("output-file,o", po::value(&relFilename), "Output REL filename")
-			("rel-id", po::value(&moduleID)->default_value(0x1000), "REL file ID");
-
-		po::positional_options_description positionals;
-		positionals.add("input-file", -1);
-
-		po::variables_map varMap;
-		po::store(
-			po::command_line_parser(argc, argv)
-				.options(description)
-				.positional(positionals)
-				.run(),
-			varMap
-		);
-		po::notify(varMap);
-
-		if (varMap.count("help")
-			|| varMap.count("input-file") != 1
-			|| varMap.count("symbol-file") != 1)
-		{
-			std::cout << description << "\n";
-			return 1;
-		}
+		auto cli = (
+			value("input file", infile).doc("Input ELF filename"),
+			value("symbol file", symbolFile).doc("Input symbol filename"),
+			option("-o", "--output-file") & value("Output REL filename"),
+			option("--rel-id") & value("REL file ID")
+			)
 	}
 
-	if (relFilename == "")
-	{
-		relFilename = elfFilename.substr(0, elfFilename.find_last_of('.')) + ".rel";
-	}
+	// argparse::ArgumentParser program("elf2rel");
+
+	// program.add_argument("input-file")
+	// 	.required()
+	// 	.help("input ELF filename ");
+    //
+	// program.add_argument("symbol-file")
+	// 	.required()
+	// 	.help("input symbol filename ");
+    //
+	// program.add_argument("--output-file", "-o")
+	// 	.default_value("poopies")
+	// 	.help("output REL filename");
+    //
+	// program.add_argument("--rel-id")
+	// 	.default_value(0x1000)
+	// 	.action([](const std::string& value) { return std::stoi(value); })
+	// 	.help("REL file ID");
+    //
+	// try 
+	// {
+	// 	program.parse_args(argc, argv);
+	// } 
+	// catch (const std::runtime_error& err)
+	// {
+	// 	std::cout << err.what() << std::endl;
+	// 	std::cout << program;
+	// 	return 1;
+	// }
+    //
+	// relFilename = program.get("--output-file");
+	// if (relFilename == "poopies")
+	// {
+	// 	relFilename = program.get("input-file").substr(0, elfFilename.find_last_of('.')) + ".rel";
+	// }
 	
 	// Load input file
 	ELFIO::elfio inputElf;
