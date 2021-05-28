@@ -7,7 +7,7 @@
    found [here](https://github.com/complexplane/apesphere/releases). Open up the `.zip` file (you don't necessarily need
    to extract it).
 4. Plug in your SD card, flash drive, hard drive, etc. which has your homebrew files on it.
-5. On your homebrew SD card, if you have any game data on a virtual memory card in Slot B for monkey ball, you're going
+5. On your homebrew SD card, if you have any game data on a virtual memory card in Slot B, you're going
    to want to back it up as the practice mod will replace it. It will be the file `saves/GM2E_B.raw`. If you don't have
    this file or don't know what I'm talking about, you're probably fine.
 6. Drag the `codes` and `saves` folders from the `.zip` release you downloaded to your SD card. If asked to replace
